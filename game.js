@@ -30,7 +30,7 @@ const levels = [
 let score = 0;
 let levelIndex = 0;
 let coinsCollected = 0;
-let phase = 'transition';
+let phase = 'menu';
 let transitionTimer = 0;
 let enemySpawnTimer = 0;
 
@@ -316,13 +316,21 @@ window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
 
     if (e.key === ' ') {
-        shoot();
+        if (phase === 'menu') {
+            resetGame();
+        } else {
+            shoot();
+        }
     }
     if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
         resetGame();
     }
-    if (e.key === 'Enter' && phase === 'transition') {
-        transitionTimer = 0;
+    if (e.key === 'Enter') {
+        if (phase === 'menu') {
+            resetGame();
+        } else if (phase === 'transition') {
+            transitionTimer = 0;
+        }
     }
 });
 
@@ -333,6 +341,10 @@ window.addEventListener('keyup', (e) => {
 let lastTime = 0;
 
 function update(dt) {
+    if (phase === 'menu') {
+        return;
+    }
+
     if (phase === 'transition') {
         transitionTimer -= dt;
         if (transitionTimer <= 0) {
@@ -792,7 +804,9 @@ function render() {
     });
     ctx.globalAlpha = 1;
 
-    drawHud();
+    if (phase !== 'menu') {
+        drawHud();
+    }
     drawOverlay();
 }
 
@@ -835,6 +849,53 @@ function drawHud() {
 }
 
 function drawOverlay() {
+    if (phase === 'menu') {
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 32px Arial';
+        ctx.fillStyle = 'gold';
+        ctx.fillText('👾 Canvas Game', canvas.width / 2, 52);
+
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#aaa';
+        ctx.fillText('Прогрессия уровней: Лес → Пустыня → Снега → Вулкан → Космос', canvas.width / 2, 76);
+
+        const rows = [
+            { key: '↑ ↓ ← →', desc: 'движение' },
+            { key: 'Пробел', desc: 'выстрел в сторону движения' },
+            { key: 'Enter', desc: 'начать / пропустить заставку уровня' },
+            { key: 'R', desc: 'начать заново' }
+        ];
+
+        ctx.fillStyle = 'white';
+        ctx.font = '18px Arial';
+        rows.forEach((row, i) => {
+            const y = 120 + i * 30;
+            ctx.fillStyle = '#ffd700';
+            ctx.textAlign = 'right';
+            ctx.fillText(row.key, canvas.width / 2 - 14, y);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'white';
+            ctx.fillText(row.desc, canvas.width / 2 + 14, y);
+        });
+
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#ddd';
+        ctx.fillText('Как убить врага — стреляйте в него. Обычный враг умирает с одного попадания,', canvas.width / 2, 252);
+        ctx.fillText('более живучие (в Снегах и Вулкане) требуют больше выстрелов.', canvas.width / 2, 274);
+        ctx.fillText('Собирайте золотые монеты, чтобы перейти на следующий уровень.', canvas.width / 2, 296);
+        ctx.fillText('Коричневые препятствия блокируют движение и пули — обходите их.', canvas.width / 2, 318);
+        ctx.fillText('У вас 3 жизни ♥. Касание врага отнимает 1 жизнь, затем короткая неуязвимость.', canvas.width / 2, 340);
+        ctx.fillText('В конце ждёт финальный босс в Космосе!', canvas.width / 2, 362);
+
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('Нажмите Пробел или Enter, чтобы начать', canvas.width / 2, 392);
+        ctx.textAlign = 'left';
+    }
+
     if (phase === 'transition') {
         const level = getLevel();
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -898,5 +959,4 @@ function loop(timestamp) {
     requestAnimationFrame(loop);
 }
 
-startLevel(0);
 requestAnimationFrame(loop);
