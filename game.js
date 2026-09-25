@@ -850,49 +850,69 @@ function drawHud() {
 
 function drawOverlay() {
     if (phase === 'menu') {
-        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.fillStyle = 'rgba(0,0,0,0.78)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.textAlign = 'center';
-        ctx.font = 'bold 32px Arial';
+
+        ctx.font = 'bold 30px Arial';
         ctx.fillStyle = 'gold';
-        ctx.fillText('👾 Canvas Game', canvas.width / 2, 52);
+        ctx.fillText('👾 Canvas Game', canvas.width / 2, 50);
 
-        ctx.font = '16px Arial';
+        ctx.font = '14px Arial';
         ctx.fillStyle = '#aaa';
-        ctx.fillText('Прогрессия уровней: Лес → Пустыня → Снега → Вулкан → Космос', canvas.width / 2, 76);
+        ctx.fillText('Лес → Пустыня → Снега → Вулкан → Космос', canvas.width / 2, 74);
 
-        const rows = [
-            { key: '↑ ↓ ← →', desc: 'движение' },
-            { key: 'Пробел', desc: 'выстрел в сторону движения' },
-            { key: 'Enter', desc: 'начать / пропустить заставку уровня' },
-            { key: 'R', desc: 'начать заново' }
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2 - 200, 90);
+        ctx.lineTo(canvas.width / 2 + 200, 90);
+        ctx.stroke();
+
+        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('УПРАВЛЕНИЕ', canvas.width / 2, 116);
+
+        const controls = [
+            '↑ ↓ ← →     —   движение',
+            'Пробел     —   выстрел в сторону движения',
+            'Enter     —   начать / пропустить заставку уровня',
+            'R     —   начать заново'
         ];
 
+        ctx.font = '15px Arial';
         ctx.fillStyle = 'white';
-        ctx.font = '18px Arial';
-        rows.forEach((row, i) => {
-            const y = 120 + i * 30;
-            ctx.fillStyle = '#ffd700';
-            ctx.textAlign = 'right';
-            ctx.fillText(row.key, canvas.width / 2 - 14, y);
-            ctx.textAlign = 'left';
-            ctx.fillStyle = 'white';
-            ctx.fillText(row.desc, canvas.width / 2 + 14, y);
+        controls.forEach((line, i) => {
+            ctx.fillText(line, canvas.width / 2, 140 + i * 24);
         });
 
-        ctx.font = '16px Arial';
-        ctx.fillStyle = '#ddd';
-        ctx.fillText('Как убить врага — стреляйте в него. Обычный враг умирает с одного попадания,', canvas.width / 2, 252);
-        ctx.fillText('более живучие (в Снегах и Вулкане) требуют больше выстрелов.', canvas.width / 2, 274);
-        ctx.fillText('Собирайте золотые монеты, чтобы перейти на следующий уровень.', canvas.width / 2, 296);
-        ctx.fillText('Коричневые препятствия блокируют движение и пули — обходите их.', canvas.width / 2, 318);
-        ctx.fillText('У вас 3 жизни ♥. Касание врага отнимает 1 жизнь, затем короткая неуязвимость.', canvas.width / 2, 340);
-        ctx.fillText('В конце ждёт финальный босс в Космосе!', canvas.width / 2, 362);
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2 - 200, 240);
+        ctx.lineTo(canvas.width / 2 + 200, 240);
+        ctx.stroke();
 
-        ctx.font = 'bold 20px Arial';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('КАК ИГРАТЬ', canvas.width / 2, 264);
+
+        const tips = [
+            'Стреляйте во врагов — обычные гибнут с одного попадания',
+            'Собирайте золотые монеты, чтобы перейти на следующий уровень',
+            'Препятствия блокируют движение и пули — обходите их',
+            'У вас 3 жизни ♥ — касание врага отнимает 1 жизнь',
+            'В конце каждого уровня ждёт финальный босс!'
+        ];
+
+        ctx.font = '15px Arial';
+        ctx.fillStyle = 'white';
+        tips.forEach((line, i) => {
+            ctx.fillText(line, canvas.width / 2, 288 + i * 24);
+        });
+
+        ctx.font = 'bold 18px Arial';
         ctx.fillStyle = '#4ade80';
-        ctx.fillText('Нажмите Пробел или Enter, чтобы начать', canvas.width / 2, 392);
+        ctx.fillText('Нажмите Пробел или Enter, чтобы начать', canvas.width / 2, 390);
         ctx.textAlign = 'left';
     }
 
