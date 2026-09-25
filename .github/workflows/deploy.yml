@@ -1,0 +1,64 @@
+# Push в master -> прод https://canvas-game.apps.botops.ru
+# Сервер принимает только `deploy <sha>` + tar.gz сборки (forced command botops-ci-gate).
+# Подключение: botops-ci-setup static canvas-game roman123123su/canvas-game (скилл botops-deploy).
+name: Deploy to botops (prod)
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botops-deploy-canvas-game
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact push SHA
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          cp index.html game.js dist/
+
+      - name: Check build output
+        run: |
+          test -f "dist/index.html"
+          if find "dist" ! -type f ! -type d | grep -q .; then
+            echo "symlink/спецфайлы в сборке не принимаются сервером" >&2
+            exit 1
+          fi
+
+      - name: Install deploy SSH identity
+        env:
+          SSH_KEY: ${{ secrets.BOTOPS_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.BOTOPS_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/botops_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/botops_deploy ~/.ssh/known_hosts
+
+      - name: Deploy exact SHA
+        env:
+          HOST: ${{ secrets.BOTOPS_DEPLOY_HOST }}
+          USER_NAME: ${{ secrets.BOTOPS_DEPLOY_USER }}
+        run: |
+          set -o pipefail
+          tar -C "dist" -czf - . | ssh \
+            -i ~/.ssh/botops_deploy \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$USER_NAME@$HOST" "deploy $GITHUB_SHA" | tee result.txt
+          grep -q '^RESULT ' result.txt
+          sed -n 's/^RESULT /### /p' result.txt >> "$GITHUB_STEP_SUMMARY"
