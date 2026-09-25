@@ -20,10 +20,10 @@ const coin = {
 };
 
 const levels = [
-    { name: 'Лес', theme: 'forest', coinsNeeded: 6, enemySpeedMin: 60, enemySpeedMax: 90, enemyHp: 1, spawnInterval: 2.2, obstacles: 6 },
-    { name: 'Пустыня', theme: 'desert', coinsNeeded: 8, enemySpeedMin: 75, enemySpeedMax: 105, enemyHp: 1, spawnInterval: 1.9, obstacles: 6 },
-    { name: 'Снега', theme: 'snow', coinsNeeded: 10, enemySpeedMin: 55, enemySpeedMax: 80, enemyHp: 2, spawnInterval: 1.7, obstacles: 5 },
-    { name: 'Вулкан', theme: 'volcano', coinsNeeded: 12, enemySpeedMin: 90, enemySpeedMax: 120, enemyHp: 2, spawnInterval: 1.4, obstacles: 5 },
+    { name: 'Лес', theme: 'forest', coinsNeeded: 6, enemySpeedMin: 30, enemySpeedMax: 50, enemyHp: 1, spawnInterval: 4.0, obstacles: 6 },
+    { name: 'Пустыня', theme: 'desert', coinsNeeded: 8, enemySpeedMin: 50, enemySpeedMax: 75, enemyHp: 1, spawnInterval: 3.5, obstacles: 6 },
+    { name: 'Снега', theme: 'snow', coinsNeeded: 10, enemySpeedMin: 40, enemySpeedMax: 60, enemyHp: 1, spawnInterval: 3.0, obstacles: 5 },
+    { name: 'Вулкан', theme: 'volcano', coinsNeeded: 12, enemySpeedMin: 70, enemySpeedMax: 95, enemyHp: 1, spawnInterval: 2.5, obstacles: 5 },
     { name: 'Космос', theme: 'space', coinsNeeded: 0, boss: true, obstacles: 6 }
 ];
 
@@ -180,7 +180,7 @@ function spawnCoin() {
 function spawnEnemy() {
     const level = getLevel();
     if (level.boss || phase !== 'playing') return;
-    if (enemies.length >= 8) return;
+    if (enemies.length >= 5) return;
 
     let x, y;
     for (let attempt = 0; attempt < 60; attempt++) {
@@ -189,6 +189,11 @@ function spawnEnemy() {
         if (Math.hypot(x - player.x, y - player.y) >= 150) break;
     }
 
+    // Случайное направление движения (не всегда за игроком)
+    const dirAngle = Math.random() * Math.PI * 2;
+    const dirX = Math.cos(dirAngle);
+    const dirY = Math.sin(dirAngle);
+
     enemies.push({
         x: x,
         y: y,
@@ -196,7 +201,9 @@ function spawnEnemy() {
         speed: level.enemySpeedMin + Math.random() * (level.enemySpeedMax - level.enemySpeedMin),
         maxHp: level.enemyHp,
         hp: level.enemyHp,
-        flash: 0
+        flash: 0,
+        dirX: dirX,
+        dirY: dirY
     });
 }
 
@@ -473,14 +480,18 @@ function update(dt) {
 
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
-        const edx = cx - e.x;
-        const edy = cy - e.y;
-        const dist = Math.hypot(edx, edy);
+        
+        // Враги движутся своим путем, а не за игроком
+        e.x += e.dirX * e.speed * dt;
+        e.y += e.dirY * e.speed * dt;
 
-        if (dist > 0) {
-            e.x += (edx / dist) * e.speed * dt;
-            e.y += (edy / dist) * e.speed * dt;
+        // Иногда меняют направление на случайное
+        if (Math.random() < 0.005) {
+            const dirAngle = Math.random() * Math.PI * 2;
+            e.dirX = Math.cos(dirAngle);
+            e.dirY = Math.sin(dirAngle);
         }
+
         resolveCircle(e, e.size / 2);
 
         if (e.flash > 0) {
