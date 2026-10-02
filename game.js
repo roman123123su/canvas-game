@@ -872,7 +872,7 @@ function drawOverlay() {
 
         ctx.font = '14px Arial';
         ctx.fillStyle = '#aaa';
-        ctx.fillText('Лес → Пустыня → Снега → Вулкан → Космос', canvas.width / 2, 74);
+        ctx.fillText('Лес → Пустыня → Снега → Вулкан → Космос', canvas.width / 2, 90);
 
         ctx.strokeStyle = 'rgba(255,255,255,0.25)';
         ctx.beginPath();
