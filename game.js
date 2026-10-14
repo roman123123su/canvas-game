@@ -10,8 +10,147 @@ const player = {
     hp: 3,
     dirX: 1,
     dirY: 0,
+    facing: 'down',
     invincible: 0
 };
+
+// --- Пиксельный спрайт игрока ---
+// Сетка 20x20 пикселей, рисуется с масштабом 2 (итого 40x40 = player.size).
+const SPRITE_SIZE = 20;
+const SPRITE_SCALE = 2;
+
+const SPRITE_PALETTE = {
+    O: '#0b1226', // контур
+    h: '#2b52c9', // волосы
+    H: '#4f7dff', // блик волос
+    S: '#f6c9a0', // кожа
+    s: '#d9a273', // тень кожи
+    E: '#ffffff', // белок глаза
+    P: '#101828', // зрачок
+    B: '#2563eb', // корпус
+    b: '#60a5fa', // светлый корпус
+    D: '#1d4ed8', // штаны/обувь
+    G: '#475569', // ствол
+    g: '#94a3b8' // блик ствола
+};
+
+// Общая «нижняя» часть тела (торс, руки, ноги) — одинакова для всех направлений.
+const SPRITE_BODY = [
+    '..OOBBBBBBBBBBBBOO..',
+    '.OSBBBBBBBBBBBbBGgO.',
+    '.OSBBBBBBBBBBBbBGgO.',
+    '..OOBBBBBBBBBBBBOO..',
+    '....OOBBBBOOBBBBOO..',
+    '....OOBBBBOOBBBBOO..',
+    '....OODDDDOODDDDOO..',
+    '....OODDDDOODDDDOO..',
+    '.....OOOO..OOOO.....',
+    '....................',
+    '....................'
+];
+
+const SPRITE_FRAMES = {
+    // Вид спереди: лицо с глазами, ствол в правой руке.
+    down: [
+        '....................',
+        '.......OOOOOO.......',
+        '.....OOHhhhhhOO.....',
+        '....OhhhhhhhhhhO....',
+        '....OSSSSSSSSSSO....',
+        '....OSSSSSSSSSSO....',
+        '....OSEPSSSSPESO....',
+        '....OSSSsSsSSSO.....',
+        '.....OSSSSSSSSO.....'
+    ].concat(SPRITE_BODY),
+
+    // Вид со спины: вместо лица — затылок.
+    up: [
+        '....................',
+        '.......OOOOOO.......',
+        '.....OOHhhhhhOO.....',
+        '....OhhhhhhhhhhO....',
+        '....OhhhhhhhhhhO....',
+        '....OhhhhhhhhhhO....',
+        '....OhhhhhhhhhhO....',
+        '....OhhhhhhhhhhO....',
+        '.....OhhhhhhhhO.....'
+    ].concat(SPRITE_BODY),
+
+    // Вид сбоку (влево получается зеркалением).
+    right: [
+        '....................',
+        '........OOOO........',
+        '.......OHhhhO.......',
+        '......OhhhhhhO......',
+        '.....OhSSSSSSO......',
+        '.....OhSSSSSSO......',
+        '.....OhSSSSEPSO.....',
+        '.....OSSSSsSSSO.....',
+        '......OSSSSSSO......',
+        '....OOBBBBBBBBOO....',
+        '...OSBBBBBBBBBGgO...',
+        '...OSBBBBBBBBBGgO...',
+        '....OOBBBBBBBBOO....',
+        '...OOBBBBOOBBBBBO...',
+        '...OOBBBBOOBBBBBO...',
+        '...OODDDDOODDDDDO...',
+        '....OODDDDOODDDDOO..',
+        '.....OOOO..OOOO.....',
+        '....................',
+        '....................'
+    ]
+};
+
+function buildSprite(rows) {
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = SPRITE_SIZE;
+    spriteCanvas.height = SPRITE_SIZE;
+    const g = spriteCanvas.getContext('2d');
+
+    rows.forEach((row, y) => {
+        for (let x = 0; x < row.length; x++) {
+            const color = SPRITE_PALETTE[row[x]];
+            if (!color) continue;
+            g.fillStyle = color;
+            g.fillRect(x, y, 1, 1);
+        }
+    });
+
+    return spriteCanvas;
+}
+
+const SPRITE_CANVASES = {
+    down: buildSprite(SPRITE_FRAMES.down),
+    up: buildSprite(SPRITE_FRAMES.up),
+    right: buildSprite(SPRITE_FRAMES.right)
+};
+
+// При диагональном движении берём доминирующую ось.
+function getPlayerFacing() {
+    const ax = Math.abs(player.dirX);
+    const ay = Math.abs(player.dirY);
+
+    if (ax < 0.01 && ay < 0.01) return player.facing;
+    if (ax >= ay) return player.dirX > 0 ? 'right' : 'left';
+    return player.dirY > 0 ? 'down' : 'up';
+}
+
+function drawPlayer() {
+    const facing = getPlayerFacing();
+    const sprite = SPRITE_CANVASES[facing === 'left' ? 'right' : facing];
+    const drawSize = player.size;
+    const offsetX = (drawSize - SPRITE_SIZE * SPRITE_SCALE) / 2;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+        sprite,
+        player.x + offsetX,
+        player.y + offsetX,
+        SPRITE_SIZE * SPRITE_SCALE,
+        SPRITE_SIZE * SPRITE_SCALE
+    );
+    ctx.imageSmoothingEnabled = true;
+}
 
 const coin = {
     x: 0,
@@ -228,6 +367,9 @@ function startLevel(index) {
     player.invincible = 0;
     player.x = 280;
     player.y = 180;
+    player.dirX = 1;
+    player.dirY = 0;
+    player.facing = 'down';
 
     clearWorld();
     placeObstacles();
@@ -799,11 +941,7 @@ function render() {
     }
 
     if (player.invincible <= 0 || Math.floor(player.invincible * 8) % 2 === 0) {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(player.x, player.y, player.size, player.size);
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(player.x, player.y, player.size, player.size);
+        drawPlayer();
     }
 
     particles.forEach((p) => {
